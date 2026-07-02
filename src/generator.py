@@ -1,33 +1,33 @@
 """
 AI Test Case Generator
 =======================
-
-Takes a feature requirement (plain English) and generates structured
-test cases using Google Gemini (free API) — covering positive,
-negative, and edge cases. Exports to CSV for Jira/TestRail import.
+Uses Groq API (free) via direct HTTP requests — no external libraries
+needed beyond the Python standard library. Works on any Python version.
+https://console.groq.com
 """
 
 import os
 import json
 import csv
 import argparse
-import google.generativeai as genai
+import urllib.request
+import urllib.error
 
-# Configure Gemini with your free API key
-API_KEY = os.environ.get("GEMINI_API_KEY")
+API_KEY = os.environ.get("GROQ_API_KEY")
 if not API_KEY:
     raise EnvironmentError(
-        "GEMINI_API_KEY not set.\n"
-        "Get a free key at: https://aistudio.google.com\n"
-        "Then run: export GEMINI_API_KEY='your-key-here'"
+        "GROQ_API_KEY not set.\n"
+        "Get a free key at: https://console.groq.com\n"
+        "On Windows PowerShell run:\n"
+        '  $env:GROQ_API_KEY="your-key-here"'
     )
 
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")  # free tier model
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL = "llama-3.3-70b-versatile"  # free, fast, high quality
 
-PROMPT_TEMPLATE = """You are a senior QA engineer writing manual test cases for a software feature.
+SYSTEM_PROMPT = """You are a senior QA engineer writing manual test cases for a software feature.
 
-Given the feature requirement below, generate a comprehensive set of test cases covering:
+Given a feature requirement, generate a comprehensive set of test cases covering:
 1. Positive (happy path) scenarios
 2. Negative scenarios (invalid input, error handling)
 3. Edge cases (boundary values, unusual but valid inputs)
@@ -35,10 +35,10 @@ Given the feature requirement below, generate a comprehensive set of test cases 
 
 Respond ONLY with valid JSON matching this exact structure, no markdown, no code fences, no other text:
 
-{{
+{
   "feature": "short feature name",
   "test_cases": [
-    {{
+    {
       "id": "TC-001",
       "category": "positive|negative|edge_case",
       "title": "short test case title",
@@ -46,35 +46,56 @@ Respond ONLY with valid JSON matching this exact structure, no markdown, no code
       "steps": ["step 1", "step 2", "step 3"],
       "expected_result": "what should happen",
       "priority": "high|medium|low"
-    }}
+    }
   ],
   "regression_risks": ["risk 1", "risk 2"]
-}}
-
-Feature requirement:
-{requirement}"""
+}"""
 
 
 def generate_test_cases(requirement: str) -> dict:
-    """
-    Send a requirement to Gemini and return structured test case data.
-    Raises ValueError if the response is not valid JSON.
-    """
-    prompt = PROMPT_TEMPLATE.format(requirement=requirement)
-    response = model.generate_content(prompt)
-    raw_text = response.text.strip()
+    """Call Groq API via HTTP and return structured test case data."""
+    payload = json.dumps({
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"Feature requirement:\n\n{requirement}"}
+        ],
+        "temperature": 0.3,
+        "max_tokens": 4096,
+    }).encode("utf-8")
 
-    # Defensive: strip markdown code fences if model adds them anyway
+    req = urllib.request.Request(
+        API_URL,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {API_KEY}",
+            "User-Agent": "ai-test-case-generator/1.0",
+        },
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        raise RuntimeError(f"API error {e.code}: {error_body}")
+
+    # Extract text from Groq's OpenAI-compatible response format
+    raw_text = result["choices"][0]["message"]["content"].strip()
+
+    # Strip markdown code fences if model adds them anyway
     if raw_text.startswith("```"):
-        lines = raw_text.split("\n")
-        raw_text = "\n".join(lines[1:-1])
+        raw_text = raw_text.split("```")[1]
+        if raw_text.startswith("json"):
+            raw_text = raw_text[4:]
+
 
     try:
         return json.loads(raw_text)
     except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Model did not return valid JSON.\nError: {e}\nRaw response:\n{raw_text}"
-        )
+        raise ValueError(f"Model did not return valid JSON.\nError: {e}\nRaw:\n{raw_text}")
 
 
 def print_test_cases(data: dict) -> None:
@@ -122,7 +143,7 @@ def export_to_csv(data: dict, filepath: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate manual test cases from a feature requirement using Gemini AI (free)."
+        description="Generate manual test cases from a feature requirement using Groq AI (free)."
     )
     parser.add_argument("requirement", nargs="?", help="Feature requirement text.")
     parser.add_argument("--file", "-f", help="Path to a text file containing the requirement.")

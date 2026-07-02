@@ -4,12 +4,6 @@ A CLI tool that takes a plain-English feature requirement and uses Google Gemini
 
 ---
 
-## Why I built this
-
-As a QA professional, writing comprehensive test cases from a requirements doc is repetitive and easy to under-cover, especially edge cases under time pressure. This tool gives a fast, structured first draft to review, edit, and prioritise — so more time goes into actually testing rather than transcribing requirements into test case format.
-
----
-
 ## How it works
 
 ```
@@ -55,7 +49,7 @@ Requirement (text) → Gemini API → Structured JSON → Console output + CSV e
 ### 2. Install and run
 
 ```bash
-git clone https://github.com/Maggarb/ai-test-case-generator.git
+git clone https://github.com/Maggarb/AI-Test-Case-Generator.git
 cd ai-test-case-generator
 pip install -r requirements.txt
 
@@ -85,4 +79,3 @@ python src/generator.py --file examples/sample_requirement.txt --csv output.csv
 
 ---
 
-*Part of my QA automation portfolio — see also [Playwright E2E Tests](https://github.com/Maggarb/Playwright-Saucedemo), [Cypress API Tests](https://github.com/Maggarb/Cypress-API-UI-Automation-Framework), and [Python API Framework](https://github.com/Maggarb/Pytest-API-Framework)*

@@ -1,0 +1,10 @@
+Feature: Password Reset
+
+Users can reset their password via a "Forgot Password" link on the login page.
+
+- User enters their registered email address.
+- If the email exists, the system sends a password reset link valid for 1 hour.
+- The user clicks the link and is taken to a "Set New Password" page.
+- The new password must be at least 8 characters and include at least 1 number.
+- After successfully resetting, the user is redirected to the login page with a confirmation message.
+- All existing sessions for that user should be invalidated after a successful password reset.

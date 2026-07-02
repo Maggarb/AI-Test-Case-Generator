@@ -1,0 +1,4 @@
+ID,Category,Title,Preconditions,Steps,Expected Result,Priority
+TC-001,positive,User successfully resets password with valid link,User has a registered account with a valid email,Click 'Forgot Password' | Enter registered email | Click reset link within 1 hour | Enter new valid password | Submit,Password is updated and user can log in with new password,high
+TC-002,negative,Reset link expired after 1 hour,User requested a reset link more than 1 hour ago,Click the expired reset link,User sees an error message stating the link has expired,high
+TC-003,edge_case,Password with exactly 8 characters and 1 number,"User has a valid, unexpired reset link",Enter a password with exactly 8 characters including 1 number,Password is accepted as it meets the minimum boundary requirement,medium

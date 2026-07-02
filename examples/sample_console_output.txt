@@ -1,0 +1,44 @@
+======================================================================
+FEATURE: Password Reset via Email Link
+======================================================================
+
+[TC-001] User successfully resets password with valid link  (positive, priority: high)
+  Preconditions: User has a registered account with a valid email
+  Steps:
+    1. Click 'Forgot Password'
+    2. Enter registered email
+    3. Click reset link within 1 hour
+    4. Enter new valid password (8+ chars, 1 number)
+    5. Submit
+  Expected result: Password is updated and user can log in with new password
+
+[TC-002] Reset link expired after 1 hour  (negative, priority: high)
+  Preconditions: User requested a reset link more than 1 hour ago
+  Steps:
+    1. Click the expired reset link
+  Expected result: User sees an error message stating the link has expired
+
+[TC-003] Password with exactly 8 characters and 1 number  (edge_case, priority: medium)
+  Preconditions: User has a valid, unexpired reset link
+  Steps:
+    1. Enter a password with exactly 8 characters including 1 number
+  Expected result: Password is accepted as it meets the minimum boundary requirement
+
+[TC-004] Email field left empty on Forgot Password form  (negative, priority: medium)
+  Preconditions: User is on the Forgot Password page
+  Steps:
+    1. Leave the email field empty
+    2. Click submit
+  Expected result: Form displays a validation error and does not submit
+
+[TC-005] Existing sessions invalidated after password reset  (positive, priority: high)
+  Preconditions: User is logged in on two devices and requests a password reset
+  Steps:
+    1. Complete password reset flow on device A
+    2. Check session status on device B
+  Expected result: Device B's session is invalidated and requires re-login
+
+REGRESSION RISKS TO CONSIDER:
+  - Login flow should be retested since password validation logic is shared
+  - Session management changes could affect "remember me" functionality
+  - Email delivery service integration should be monitored for failures

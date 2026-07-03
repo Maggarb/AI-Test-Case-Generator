@@ -1,81 +1,154 @@
-# 🤖 AI Test Case Generator
+# AI Test Case Generator
 
-A CLI tool that takes a plain-English feature requirement and uses Google Gemini (free API) to generate structured manual test cases — covering positive, negative, and edge-case scenarios, plus regression risk notes. Exports directly to CSV for import into Jira, TestRail, or Xray.
+Generate structured manual test cases from software requirements using **Groq AI**.
+
+This tool takes a feature requirement (text or file), sends it to the Groq API, and generates comprehensive manual test cases covering:
+
+* ✅ Positive (happy path) scenarios
+* ✅ Negative scenarios
+* ✅ Edge cases
+* ✅ Regression risks
+
+The generated test cases can be displayed in the terminal or exported to CSV for use with tools such as Jira, TestRail, or Xray.
 
 ---
 
-## How it works
+## Features
 
 ```
-Requirement (text) → Gemini API → Structured JSON → Console output + CSV export
+Requirement (text) → Groq API → Structured JSON → Console output + CSV export
 ```
 
-1. You provide a feature requirement (as a CLI argument or a text file)
-2. The tool sends it to Gemini with a system prompt instructing it to act as a senior QA engineer and return structured JSON
-3. The JSON is parsed and printed in a readable format
-4. Optionally exported to CSV with one row per test case
+* Uses the **Groq API** (OpenAI-compatible API)
+* No third-party Python dependencies required
+* Accepts requirements from the command line or a text file
+* Outputs structured JSON
+* Exports test cases to CSV
 
 ---
 
-## Design decisions
+## Requirements
 
-**Structured JSON output, not free text.** Instructing the model to return a strict JSON schema makes the output programmatically usable — it can be piped into a CSV, a test management tool, or a database — rather than something a human has to manually reformat.
+* Python 3.10+
+* A free Groq API key
 
-**No agent framework.** This is a single-step task: read input, call the LLM once, structure the output. Wrapping it in LangChain or CrewAI would add complexity without benefit. I'd reach for an agent framework if this needed multiple coordinated steps — for example, an agent that fetches requirements from Jira, generates test cases, then creates the tickets automatically.
+Create a free account and generate an API key at:
 
-**Defensive JSON parsing.** LLMs sometimes wrap JSON in markdown code fences even when told not to. The parser strips these defensively rather than failing outright.
-
-**CSV export matches real QA tooling.** Output columns (ID, Category, Title, Preconditions, Steps, Expected Result, Priority) mirror fields used in Jira/Xray/TestRail imports.
-
----
-
-## What I'd change if I started over
-
-- **Add a confidence/review flag** — flag test cases where requirements are ambiguous so reviewers know where to focus
-- **Support batch processing** — process a list of user stories from a Jira export in one run
-- **Add a lightweight eval step** — compare generated cases against human-written "gold standard" cases to measure coverage quality
-- **Retry logic for malformed JSON** — retry once with a corrective follow-up prompt before failing
+https://console.groq.com
 
 ---
 
-## Getting started
+## Installation
 
-### 1. Get a free Gemini API key
-- Go to **aistudio.google.com**
-- Sign in with your Google account
-- Click "Get API Key" → "Create API key"
-- No credit card required
-
-### 2. Install and run
+Clone the repository:
 
 ```bash
 git clone https://github.com/Maggarb/AI-Test-Case-Generator.git
-cd ai-test-case-generator
-pip install -r requirements.txt
+cd AI-Test-Case-Generator
+```
 
-# Set your free API key
-export GEMINI_API_KEY="your-key-here"
+No additional packages are required.
 
-# Run from a string
-python src/generator.py "Users can reset their password via email link..."
+---
 
-# Run from a file
+## Configure the API Key
+
+### Windows PowerShell
+
+```powershell
+$env:GROQ_API_KEY="your-api-key"
+```
+
+### Windows Command Prompt
+
+```cmd
+set GROQ_API_KEY=your-api-key
+```
+
+### Linux / macOS
+
+```bash
+export GROQ_API_KEY="your-api-key"
+```
+
+---
+
+## Usage
+
+Generate test cases from a text file:
+
+```bash
 python src/generator.py --file examples/sample_requirement.txt
+```
 
-# Export to CSV
+Generate test cases directly from the command line:
+
+```bash
+python src/generator.py "Users should be able to reset their password using email."
+```
+
+Export the results to CSV:
+
+```bash
 python src/generator.py --file examples/sample_requirement.txt --csv output.csv
 ```
 
 ---
 
-## Tech Stack
+## Example Output
 
-| Tool | Purpose |
-|------|---------|
-| [Google Gemini API](https://aistudio.google.com) | Free LLM that generates the test cases |
-| Python | CLI implementation |
-| `argparse` | Command-line interface |
-| `csv` (stdlib) | Export for test management tools |
+```text
+======================================================================
+FEATURE: Password Reset
+======================================================================
+
+[TC-001] Reset password with valid email
+Priority: High
+
+Preconditions:
+- User has a registered account
+
+Steps:
+1. Open the login page.
+2. Click "Forgot Password".
+3. Enter a registered email.
+4. Submit the request.
+
+Expected Result:
+Password reset instructions are sent to the user's email.
+
+Regression Risks:
+- Email delivery
+- Login functionality
+```
+
+---
+
+## Project Structure
+
+```
+AI-Test-Case-Generator/
+│
+├── examples/
+│   └── sample_requirement.txt
+│
+├── src/
+│   └── generator.py
+│
+├── README.md
+└── LICENSE
+```
+
+---
+
+## AI Model
+
+The project currently uses:
+
+* **Provider:** Groq
+* **Model:** `llama-3.3-70b-versatile`
+
+You can easily switch to another Groq-supported model by changing the `MODEL` constant in `generator.py`.
 
 ---
 
